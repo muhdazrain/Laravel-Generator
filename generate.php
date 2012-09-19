@@ -3,7 +3,7 @@
 /**
  * Laravel Generator
  * 
- * Rapidly create models, views, migrations + schema, assets, etc.
+ * Rapidly create models, views, migrations + schema, assets, tests, etc.
  *
  * USAGE:
  * Add this file to your Laravel application/tasks directory
@@ -30,10 +30,12 @@ class Generate_Task
     public static $js_dir  = 'js/';
     public static $coffee_dir  = 'js/coffee/';
 
+
     /*
      * The content for the generate file
      */
     public static $content;
+
 
     /**
      * As a convenience, fetch popular assets for user
@@ -49,6 +51,7 @@ class Generate_Task
         // CSS
         'normalize.css' => 'https://raw.github.com/necolas/normalize.css/master/normalize.css'
     );
+    
 
     /**
      * Time Savers
@@ -327,7 +330,9 @@ EOT;
         $class_name = ucwords(array_shift($args));
 
         $file_path = $this->path('tests');
-        if ( isset($this->should_include_tests) ) $file_path .= 'controllers/';
+        if ( isset($this->should_include_tests) ) {
+            $file_path .= 'controllers/';
+        }
         $file_path .= strtolower("{$class_name}.test.php");
 
         // Begin building up the file's content
@@ -718,6 +723,7 @@ EOT;
             return "\$table->drop_column(array(" . implode(', ', $fields) . "));";
         }
     }
+    
 
     public function path($dir)
     {
