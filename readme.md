@@ -10,14 +10,13 @@
  / /_\/ _ \ '_ \ / _ \ '__/ _` | __/ _ \| '__|
 / /_\\  __/ | | |  __/ | | (_| | || (_) | |   
 \____/\___|_| |_|\___|_|  \__,_|\__\___/|_|   
-                                              
 </pre>
 
 On its own, when running migrations, Laravel simply creates the specified file, and adds a bit of boilerplate code. It's then up to you to fill in the Schema and such. ...Well that's a pain.
 
 This generator task will fill in the gaps. It can generate several things:
 
-- [Controllers and actions](#controllers)
+- [Controllers](#controllers)
 - [Models](#models)
 - [Views](#views)
 - [Migrations and Schema](#migrations)
@@ -111,7 +110,43 @@ class Admin_Controller extends Base_Controller
 
 Sweet! It's-a-nice. When using restful methods, you can specify the verb after a `:` - `index:post` or maybe `update:put`.
 
+Lastly, if you need to create nested controllers, follow the period convention:
+
+```bash
+php artisan generate:controller admin.panel
+```
+
+This will produce "controllers/admin/panel.php" with the following contents:
+
+```php
+<?php
+
+class Admin_Panel_Controller extends Base_Controller {
+
+}
+```
+
 So that's the controller generator.
+
+
+### Models
+
+For now, models generation is very simplistic.
+
+```bash
+php artisan generate:model user
+```
+
+Will produce:
+
+```php
+<?php
+
+class User extends Eloquent 
+{
+
+}
+```
 
 
 ### Migrations
