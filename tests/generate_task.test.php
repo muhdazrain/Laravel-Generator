@@ -21,7 +21,7 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 		self::$view = path('app') . 'views/';
 
 		// Clear dirs
-		File::delete(self::$controller);
+		File::cleandir(path('app') . 'controllers/');
 
 		$this->generate = new Generate_Task;
 	}
@@ -89,10 +89,23 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 			'index:post',
 		));
 
-		$contents = file::get(self::$controller);
+		$contents = File::get(self::$controller);
 
 		$this->assertContains('public $restful = true', $contents);
 		$this->assertContains('post_index', $contents);
+	}
+
+
+	public function test_can_create_nested_controllers()
+	{
+		$this->generate->controller(array(
+			'admin.panel'
+		));
+
+		$contents = File::get(path('app') . 'controllers/admin/panel.php');
+
+		$this->assertContains('class Admin_Panel_Controller', $contents);
+		$this->assertFileExists(path('app') . 'controllers/admin/panel.php');
 	}
 
 
@@ -209,7 +222,7 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 		$this->generate->resource(array(
 			'user',
 			'index',
-			'show:post',
+			'index:post',
 			'restful'
 		));
 
@@ -220,7 +233,7 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 		$contents = File::get(path('app') . 'controllers/users.php');
 
 		$this->assertContains('public function get_index', (string)$contents);
-		$this->assertContains('public function post_show', (string)$contents);
+		$this->assertContains('public function post_index', (string)$contents);
 
 	}
 

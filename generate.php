@@ -90,10 +90,13 @@ EOT;
         }
 
         // Name of the class and file
-        $class_name = ucwords(array_shift($args));
+        $class_name = str_replace('.', '/', ucwords(array_shift($args)));
 
         // Where will this file be stored?
         $file_path = $this->path('controllers') . strtolower("$class_name.php");
+
+        // Admin/panel => Admin_Panel
+        $class_name = $this->prettify_class_name($class_name);
 
         // Begin building up the file's content
         Content::new_class($class_name . '_Controller', 'Base_Controller');
@@ -101,8 +104,10 @@ EOT;
         $content = '';
         // Let's see if they added "restful" anywhere in the args.
         if ( $restful = $this->is_restful($args) ) {
+
             $args = array_diff($args, array('restful'));
             $content .= 'public $restful = true;';
+
         }
 
         // Now we filter through the args, and create the funcs.
@@ -322,6 +327,19 @@ EOT;
         $this->write_to_file($file_path, $this->prettify());
     }
 
+    /**
+     * Prepares the $name of the class
+     * Admin/panel => Admin_Panel
+     *
+     * @param $class_name string
+     */
+    protected function prettify_class_name($class_name)
+    {
+        return preg_replace_callback('/\/([a-zA-Z])/', function($m) {
+            return "_" . strtoupper($m[1]);
+        }, $class_name);
+    }
+
 
     /**
      * Creates the content for the migration file.
@@ -361,7 +379,8 @@ EOT;
 
         // Create the field rules for for the schema
         if ( $table_event === 'create' ) {
-            $fields = $this->add_columns($args);
+            $fields = $this->set_column('increments', 'id') . ';';
+            $fields .= $this->add_columns($args);
             $fields .= $this->set_column('timestamps', null) . ';';
         }
 
