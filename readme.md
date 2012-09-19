@@ -493,3 +493,21 @@ g:c config index
 ````
 
 [Refer here](https://github.com/JeffreyWay/Laravel-Generator/blob/master/aliases.md) for more alias recommendations.
+
+
+#### Backbone
+
+Let's say that you're working with Backbone, but haven't yet downloaded any of the scripts. Ideally, you'd be using a tool, like Yeoman or Bower, but, if not, do:
+
+```bash
+php artisan generate:assets jquery.js underscore.js backbone.js main.js
+```
+
+This will produce four files:
+
+- js/jquery.js
+- js/underscore.js
+- js/backbone.js
+- js/main.js
+
+The first three files will be populated the latest version of their associated libraries/frameworks.
