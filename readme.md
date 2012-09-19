@@ -399,6 +399,29 @@ The default directory paths are:
 - Sass (sass or scss extension) => `public/css/sass`
 
 
+If the generator detects that you're attempting to create a script or stylesheet that has the same name as one of the popular libraries/frameworks, it will automatically download the latest version of the asset for you. For instance:
+
+```bash
+php artisan generate:assets main.js underscore.js
+```
+
+Will generate two files: `main.js` and `underscore.js`. However, it'll detect that you likely want the Underscore.js library and will download it for you.
+
+A handful of external assets are provided by default, but you're free to add more. Just hunt down the `$external_assets` array within the generator script. 
+
+```php
+public static $external_assets = array(
+    // JavaScripts
+    'jquery.js' => 'http://code.jquery.com/jquery.js',
+    'backbone.js' => 'http://backbonejs.org/backbone.js',
+    'underscore.js' => 'http://underscorejs.org/underscore.js',
+    'handlebars.js' => 'http://cloud.github.com/downloads/wycats/handlebars.js/handlebars-1.0.rc.1.js',
+
+    // CSS
+    'normalize.css' => 'https://raw.github.com/necolas/normalize.css/master/normalize.css'
+);
+```
+
 ### Tests
 
 Laravel Generator can also generate PHPUnit test classes for you, like so:

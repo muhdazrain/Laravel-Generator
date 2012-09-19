@@ -35,6 +35,20 @@ class Generate_Task
      */
     public static $content;
 
+    /**
+     * As a convenience, fetch popular assets for user
+     * php artisan generate:assets jquery.js <---
+     */
+    public static $external_assets = array(
+        // JavaScripts
+        'jquery.js' => 'http://code.jquery.com/jquery.js',
+        'backbone.js' => 'http://backbonejs.org/backbone.js',
+        'underscore.js' => 'http://underscorejs.org/underscore.js',
+        'handlebars.js' => 'http://cloud.github.com/downloads/wycats/handlebars.js/handlebars-1.0.rc.1.js',
+
+        // CSS
+        'normalize.css' => 'https://raw.github.com/necolas/normalize.css/master/normalize.css'
+    );
 
     /**
      * Time Savers
@@ -241,6 +255,7 @@ EOT;
      * @param  $assets array
      * @return void
      */
+    public function asset($assets) { return $this->assets($assets); }
     public function assets($assets)
     {
         if( empty($assets) ) {
@@ -282,6 +297,10 @@ EOT;
                     $path = self::$css_dir . $asset;
                     break;
             }
+
+            if ( $this->is_external_asset($asset) ) {
+                $this->fetch($asset);
+            } else { self::$content = ''; }
 
             $this->write_to_file(path('public') . $path, '');
         }
@@ -326,6 +345,33 @@ EOT;
         // Create the file
         $this->write_to_file($file_path, $this->prettify());
     }
+
+
+    /**
+     * Determines whether the asset that the user wants is
+     * contained with the external assets array 
+     *
+     * @param $assets string
+     * @return boolean
+     */
+    protected function is_external_asset($asset)
+    {
+        return array_key_exists(strtolower($asset), static::$external_assets);
+    }
+
+
+    /**
+     * Fetch external asset
+     *
+     * @param $url string
+     * @return string
+     */
+    protected function fetch($url)
+    {
+       self::$content = file_get_contents(static::$external_assets[$url]);
+       return self::$content;
+    }
+
 
     /**
      * Prepares the $name of the class

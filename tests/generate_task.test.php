@@ -271,6 +271,27 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 	}
 
 
+	public function test_can_fetch_common_assets()
+	{
+		$this->generate->assets(array(
+			'jquery.js',
+			'main.js'
+			
+		));
+
+		$js_path = path('public') . 'js';
+
+		$this->assertFileExists("$js_path/jquery.js");
+		$this->assertFileExists("$js_path/main.js");
+
+		$content = File::get("$js_path/jquery.js");
+		$this->assertContains('jQuery JavaScript Library v1.8.1', $content);
+
+		$content = File::get("$js_path/main.js");
+		$this->assertEquals('', $content);
+	}
+
+
 	// @group test
 	public function test_can_create_test_files()
 	{
