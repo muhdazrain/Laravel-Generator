@@ -121,7 +121,6 @@ EOT;
 
             $args = array_diff($args, array('restful'));
             $content .= 'public $restful = true;';
-
         }
 
         // Now we filter through the args, and create the funcs.
@@ -327,7 +326,9 @@ EOT;
 
         $class_name = ucwords(array_shift($args));
 
-        $file_path = $this->path('tests') . strtolower("{$class_name}.test.php");
+        $file_path = $this->path('tests');
+        if ( isset($this->should_include_tests) ) $file_path .= 'controllers/';
+        $file_path .= strtolower("{$class_name}.test.php");
 
         // Begin building up the file's content
         Content::new_class($class_name . '_Test', 'PHPUnit_Framework_TestCase');
@@ -335,8 +336,25 @@ EOT;
         // add the functions
         $tests = '';
         foreach($args as $test) {
+            // Don't worry about tests for non-get methods for now.
+            if ( strpos($test, ':') !== false ) continue;
+            if ( $test === 'restful' ) continue;
+
             // make lower case
-            $tests .= Content::func("test_{$test}");
+            $func = Content::func("test_{$test}");
+
+            // Only if we're generating a resource.
+            if ( isset($this->should_include_tests) ) {
+                $func = $this->add_after(
+                    '{',
+                    "\n\t\t\$response = Controller::call('{$class_name}@$test');\n" . 
+                    "\t\t\$this->assertEquals('200', \$response->foundation->getStatusCode());\n" .
+                    "\t\t\$this->assertRegExp('/.+/', (string)\$response, 'There should be some content in the $test view.');",
+                    $func
+                );
+            }            
+
+            $tests .= $func;
         }
 
         // add funcs to class
@@ -495,21 +513,36 @@ EOT;
      */
     public function resource($args)
     {
+        if ( $this->should_include_tests($args) ) {
+            $args = array_diff($args, array('with_tests'));
+        }
+
         // Pluralize controller name
         if ( !preg_match('/admin|config/', $args[0]) ) {
             $args[0] = Str::plural($args[0]);
+        }
+
+        // If only the resource name was provided, let's build out the full resource map.
+        if ( count($args) === 1 ) {
+            $args = array($args[0], 'index', 'index:post', 'show', 'edit', 'new', 'update:put', 'destroy:delete', 'restful');
         }
 
         $this->controller($args);
 
         // Singular for everything else
         $resource_name = Str::singular(array_shift($args));
+        
+        // Should we include tests?
+        if ( isset($this->should_include_tests) ) {
+            $this->test(array_merge(array(Str::plural($resource_name)), $args));
+        }
 
         if ( $this->is_restful($args) ) {
             // Remove that restful item from the array. No longer needed.
             $args = array_diff($args, array('restful'));
-            $args = $this->determine_views($args);
         }
+
+        $args = $this->determine_views($args);
 
         // Let's take any supplied view names, and set them
         // in the resource name's directory.
@@ -721,6 +754,7 @@ EOT;
 
     public function add_after($where, $to_add, $content)
     {
+        // return preg_replace('/' . $where . '/', $where . $to_add, $content, 1);
         return str_replace($where, $where . $to_add, $content);
     }
 
@@ -732,21 +766,33 @@ EOT;
     }
 
 
+    protected function should_include_tests($args)
+    {
+        $tests_pos = array_search('with_tests', $args);
+
+        if ( $tests_pos !== false ) {
+            $this->should_include_tests = true;
+            return true;
+        }
+        
+        return false;
+    }
+
+
     protected function determine_views($args)
     {
-        // Separate index:post, and remove any non-GET views.
-        array_walk($args, function(&$arg, $index) use(&$args) {
-            // method, optional verb
+        $views = array();
+
+        foreach($args as $arg) {
             $bits = explode(':', $arg);
-            $arg = $bits[0];
+            $name = $bits[0];
 
-            if ( isset($bits[1]) && $bits[1] !== 'get' ) {
-                // then we shouldn't create a view for it.
-                unset($args[$index]);
+            if ( isset($bits[1]) && strtolower($bits[1]) === 'get' || !isset($bits[1]) ) {
+                $views[] = $name;
             }
-        });
+        }
 
-        return $args;
+        return $views;
     }
 }
 

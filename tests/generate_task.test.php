@@ -228,15 +228,55 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 
 		$this->assertFileExists(self::$view . 'user/index.blade.php');
 		$this->assertFileNotExists(self::$view . 'user/restful.blade.php');
-		$this->assertFileNotExists(self::$view . 'user/show.blade.php');
 
 		$contents = File::get(path('app') . 'controllers/users.php');
 
 		$this->assertContains('public function get_index', (string)$contents);
 		$this->assertContains('public function post_index', (string)$contents);
-
 	}
 
+
+	public function test_if_no_args_are_provided_it_will_generate_all_restful_methods()
+	{
+		$this->generate->resource(array('user'));
+
+		// Should create the necessary views.
+		$this->assertFileExists(self::$view . 'user/index.blade.php');
+		$this->assertFileExists(self::$view . 'user/show.blade.php');
+		$this->assertFileExists(self::$view . 'user/edit.blade.php');
+		$this->assertFileExists(self::$view . 'user/new.blade.php');
+
+		// Should create the necessary restful methods
+		$contents = (string)File::get(path('app') . 'controllers/users.php');
+		$this->assertContains('public $restful = true;', $contents);
+		$this->assertContains('public function get_index', $contents);
+		$this->assertContains('public function post_index', $contents);
+		$this->assertContains('public function get_show', $contents);
+		$this->assertContains('public function get_edit', $contents);
+		$this->assertContains('public function get_new', $contents);
+		$this->assertContains('public function put_update', $contents);
+		$this->assertContains('public function delete_destroy', $contents);
+
+		// Should create the model
+		$this->assertFileExists(path('app') . 'models/user.php');
+	}
+
+
+	public function test_if_with_tests_is_provided_it_will_generate_tests()
+	{
+		$this->generate->resource(array('user', 'with_tests'));
+
+		$this->assertFileExists(path('app') . 'tests/controllers/users.test.php');
+		$contents = (string)File::get(path('app') . 'tests/controllers/users.test.php');
+		
+
+		$this->assertContains("\$response = Controller::call('Users@index');", $contents);
+		$this->assertContains("\$this->assertEquals('200', \$response->foundation->getStatusCode());", $contents);
+		$this->assertContains("\$this->assertRegExp('/.+/', (string)\$response, 'There should be some content in the index view.');", $contents);
+
+		$this->assertNotContains("public function test_restful()", $contents);
+
+	}
 
 	// @group assets
 	public function test_can_create_assets()
@@ -318,8 +358,8 @@ class Generate_Test extends PHPUnit_Framework_TestCase
 		File::delete(path('app') . 'controllers/admin.php');
 		File::cleandir(path('app') . 'models');
 		File::cleandir(path('app') . 'migrations');
-		File::cleandir(path('app') . 'views');
 		File::cleandir(path('public') . 'css');
 		File::cleandir(path('public') . 'js');
+		File::cleandir(path('app') . 'tests/controllers');
 	}
 }
