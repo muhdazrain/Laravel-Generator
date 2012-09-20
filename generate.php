@@ -116,7 +116,7 @@ EOT;
         $class_name = $this->prettify_class_name($class_name);
 
         // Begin building up the file's content
-        Content::new_class($class_name . '_Controller', 'Base_Controller');
+        Template::new_class($class_name . '_Controller', 'Base_Controller');
 
         $content = '';
         // Let's see if they added "restful" anywhere in the args.
@@ -131,11 +131,11 @@ EOT;
             // Were params supplied? Like index:post?
             if ( strpos($method, ':') !== false ) {
                 list($method, $verb) = explode(':', $method);
-                $content .= Content::func("{$verb}_{$method}");
+                $content .= Template::func("{$verb}_{$method}");
             } else {
                 $action = $restful ? 'get' : 'action';
 
-                $content .= Content::func("{$action}_{$method}");
+                $content .= Template::func("{$action}_{$method}");
             }
         }
 
@@ -168,7 +168,7 @@ EOT;
         $file_path = $this->path('models') . strtolower("$class_name.php");
 
         // Begin building up the file's content
-        Content::new_class($class_name, 'Eloquent' );
+        Template::new_class($class_name, 'Eloquent' );
         $this->prettify();
 
         // Create the file
@@ -336,7 +336,7 @@ EOT;
         $file_path .= strtolower("{$class_name}.test.php");
 
         // Begin building up the file's content
-        Content::new_class($class_name . '_Test', 'PHPUnit_Framework_TestCase');
+        Template::new_class($class_name . '_Test', 'PHPUnit_Framework_TestCase');
 
         // add the functions
         $tests = '';
@@ -346,17 +346,11 @@ EOT;
             if ( $test === 'restful' ) continue;
 
             // make lower case
-            $func = Content::func("test_{$test}");
+            $func = Template::func("test_{$test}");
 
             // Only if we're generating a resource.
             if ( isset($this->should_include_tests) ) {
-                $func = $this->add_after(
-                    '{',
-                    "\n\t\t\$response = Controller::call('{$class_name}@$test');\n" . 
-                    "\t\t\$this->assertEquals('200', \$response->foundation->getStatusCode());\n" .
-                    "\t\t\$this->assertRegExp('/.+/', (string)\$response, 'There should be some content in the $test view.');",
-                    $func
-                );
+                $func = Template::test($class_name, $test);
             }            
 
             $tests .= $func;
@@ -424,7 +418,7 @@ EOT;
         list($table_action, $table_event) = $this->parse_action_type($class_name);
 
         // Now, we begin creating the contents of the file.
-        Content::new_class($class_name);
+        Template::new_class($class_name);
 
         /* The Migration Up Function */
         $up = $this->migration_up($table_event, $table_action, $table_name, $args);
@@ -441,10 +435,10 @@ EOT;
 
     protected function migration_up($table_event, $table_action, $table_name, $args)
     {
-        $up = Content::func('up');
+        $up = Template::func('up');
 
         // Insert a new schema function into the up function.
-        $up = $this->add_after('{', Content::schema($table_action, $table_name), $up);
+        $up = $this->add_after('{', Template::schema($table_action, $table_name), $up);
 
         // Create the field rules for for the schema
         if ( $table_event === 'create' ) {
@@ -468,16 +462,16 @@ EOT;
 
     protected function migration_down($table_event, $table_action, $table_name, $args)
     {
-        $down = Content::func('down');
+        $down = Template::func('down');
 
         if ( $table_event === 'create' ) {
-           $schema = Content::schema('drop', $table_name, false);
+           $schema = Template::schema('drop', $table_name, false);
 
            // Add drop schema into down function
            $down = $this->add_after('{', $schema, $down);
         } else {
             // for delete, add, and update
-            $schema = Content::schema('table', $table_name);
+            $schema = Template::schema('table', $table_name);
         }
 
         if ( $table_event === 'delete' ) {
@@ -777,8 +771,7 @@ EOT;
         $tests_pos = array_search('with_tests', $args);
 
         if ( $tests_pos !== false ) {
-            $this->should_include_tests = true;
-            return true;
+            return $this->should_include_tests = true;
         }
         
         return false;
@@ -803,6 +796,39 @@ EOT;
 }
 
 class Content {
+    public static function add_after($where, $to_add)
+    {
+        Generate_Task::$content = str_replace($where, $where . $to_add, Generate_Task::$content);
+
+    }
+}
+
+
+class Template {
+    public static function test($class_name, $test)
+    {
+        return <<<EOT
+    public function test_{$test}()
+    {
+        \$response = Controller::call('{$class_name}@$test'); 
+        \$this->assertEquals('200', \$response->foundation->getStatusCode());
+        \$this->assertRegExp('/.+/', (string)\$response, 'There should be some content in the $test view.');
+    }
+EOT;
+    }
+
+
+    public static function func($func_name)
+    {
+        return <<<EOT
+    public function {$func_name}()
+    {
+
+    }
+EOT;
+    }
+
+
     public static function new_class($name, $extends_class = null)
     {
         $content = "<?php class $name";
@@ -815,10 +841,6 @@ class Content {
         Generate_Task::$content = $content;
     }
 
-    public static function func($func_name)
-    {
-        return "public function {$func_name}() {}";
-    }
 
     public static function schema($table_action, $table_name, $cb = true)
     {
@@ -829,9 +851,4 @@ class Content {
             : $content . ');';
     }
 
-    public static function add_after($where, $to_add)
-    {
-        Generate_Task::$content = str_replace($where, $where . $to_add, Generate_Task::$content);
-
-    }
 }
