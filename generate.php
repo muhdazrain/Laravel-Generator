@@ -169,6 +169,18 @@ EOT;
 
         // Begin building up the file's content
         Template::new_class($class_name, 'Eloquent' );
+
+        $content = '';
+        // Let's see if they added "timestamps" anywhere in the args.
+        if ( $timestamps = $this->is_timestamps($args) ) {
+
+            $content .= 'public static $timestamps = true;';
+        }
+
+        // Add methods/actions to class.
+        Content::add_after('{', $content);
+
+        // Prettify
         $this->prettify();
 
         // Create the file
@@ -764,7 +776,12 @@ EOT;
         $restful_pos = array_search('restful', $args);
         return $restful_pos !== false;
     }
-
+    
+    protected function is_timestamps($args)
+    {
+        $timestamps_pos = array_search('timestamps', $args);
+        return $timestamps_pos !== false;
+    }
 
     protected function should_include_tests($args)
     {
